@@ -7,6 +7,7 @@ import tailwindcss from "@tailwindcss/vite";
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: '/Login-practive02/', // ← 關鍵：加上你的 repo 名稱
   plugins: [
     vue(),
     vueDevTools(),
