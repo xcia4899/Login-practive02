@@ -1,5 +1,5 @@
 <template>
-  <section class="myheader-styles flex justify-between items-center p-4">
+  <nav class="myheader-styles flex justify-between items-center p-4">
     <div class="w-[200px]">LOGO</div>
     <div ref="menuRef" class="nav-area">
       <ul class="flex gap-8">
@@ -81,7 +81,7 @@
         註冊
       </el-button>
     </div>
-  </section>
+  </nav>
 
   <!-- 登入系統 -->
   <el-dialog v-model="dialogLogin" title="登入" width="500">
@@ -107,7 +107,7 @@
     <template #footer>
       <div class="dialog-footer">
         <el-button @click="dialogLogin = false">取消</el-button>
-        <el-button @click="submitLoginForm">確認</el-button>
+        <el-button @click="submitLoginForm(formLoginRef)">確認</el-button>
       </div>
     </template>
   </el-dialog>
@@ -136,7 +136,8 @@
 
 <script setup lang="ts">
 import { useUserStore } from "@/stores/user";
-import { reactive, ref, onMounted, onBeforeUnmount } from "vue";
+import { reactive, ref, onMounted, onBeforeUnmount, watch } from "vue";
+
 const userStore = useUserStore();
 //寬度設定
 const formLabelWidth = "100px";
@@ -145,6 +146,7 @@ const formLabelWidth = "100px";
 const formLoginRef = ref();
 //開關表單
 const dialogLogin = ref(false);
+
 interface LoginForm {
   email: string;
   password: string;
@@ -173,10 +175,39 @@ const loginRules = reactive({
   password: [{ validator: validatePwd, trigger: "blur" }],
 });
 //登入方法
-const submitLoginForm = () => {
-  console.log("登入");
+import axios from "axios";
+import { adminLoginApi } from "@/api/modules/user";
+
+const submitLoginForm = async (formRef: any) => {
+  if (!formRef) return;
+  try {
+    await formRef.validate();
+
+    console.log("驗證成功");
+  } catch {
+    console.log("驗證失敗");
+    return;
+  }
+
+  try {
+    const res = await adminLoginApi({
+      email: "eve.holt@reqres.in",
+      password: "cityslicka",
+    });
+
+    console.log("API 回傳:", res); // ⭐ 直接是 data，不需要 res.data
+  } catch (err: any) {
+    console.log("API 錯誤 status:", err.response?.status);
+    console.log("API 錯誤 body:", err.response?.data);
+  }
 };
 
+//清除驗證資訊
+watch(dialogLogin, (val) => {
+  if (!val && formLoginRef.value) {
+    formLoginRef.value.resetFields();
+  }
+});
 //註冊表單
 const dialogRegister = ref(false);
 
@@ -191,8 +222,8 @@ const formRegister = reactive<RegisterForm>({
   passwordConfirm: "",
 });
 
-const menuRef = ref<HTMLElement | null>(null);
 // 點擊 header 外收合
+const menuRef = ref<HTMLElement | null>(null);
 function handleClickOutside(e: MouseEvent) {
   if (!menuRef.value) return;
 
