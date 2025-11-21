@@ -1,6 +1,6 @@
 <template>
   <nav class="myheader-styles flex justify-between items-center p-4">
-    <div class="w-[200px]">LOGO</div>
+    <div class="w-[300px]">LOGO</div>
     <div ref="menuRef" class="nav-area">
       <ul class="flex gap-8">
         <!-- 商品，下拉選單 -->
@@ -73,18 +73,27 @@
         </li>
       </ul>
     </div>
-    <div class="flex justify-between w-[200px] mamber-area">
-      <template v-if="isLoggedIn">
-        <span>{{ currentUser?.email }}</span>
-        <el-button @click="logout">登出</el-button>
+    <div class="mamber-area w-[300px]">
+      <template  v-if="isLoggedIn">
+       <div class="flex items-center gap-3">
+          <span>{{ currentUser?.email }}</span>
+          <el-button @click="logout">登出</el-button>
+       </div>
       </template>
       <template v-else>
-        <el-button  class="" plain @click="dialogLogin = true">
-          會員登入
-        </el-button>
-        <el-button class="" plain @click="dialogRegister = true">
-          註冊
-        </el-button>
+        <div class="login-regisster">
+          <el-button class="mamber-login" plain @click="dialogLogin = true">
+            登入
+          </el-button>
+          <el-button
+            class="mamber-regisster"
+            plain
+            @click="dialogRegister = true"
+          >
+            註冊
+          </el-button>
+          <div class="member">會員</div>
+        </div>
       </template>
     </div>
   </nav>
@@ -175,10 +184,10 @@ import { adminLoginApi } from "@/api/modules/user";
 const USERS_KEY = "users"; // 使用者清單 key
 
 interface UserRecord {
-  id: number;      // 自己產生的 ID
-  email: string;   // 註冊帳號
-  password: string;// 註冊密碼
-  token: string;   // 後端回傳的 token
+  id: number; // 自己產生的 ID
+  email: string; // 註冊帳號
+  password: string; // 註冊密碼
+  token: string; // 後端回傳的 token
 }
 
 interface LoginForm {
@@ -209,10 +218,8 @@ function saveUsers(users: UserRecord[]) {
 
 // ================== 登入狀態 ==================
 
-// 反應式的登入 ID（關鍵：畫面要跟著變就要用 ref）
-const currentUserId = ref<string | null>(
-  localStorage.getItem("currentUserId")
-);
+// 登入 ID（關鍵：畫面要跟著變就要用 ref）
+const currentUserId = ref<string | null>(localStorage.getItem("currentUserId"));
 
 // 目前登入的使用者
 const currentUser = computed<UserRecord | null>(() => {
@@ -234,10 +241,9 @@ console.log("是否登入:", isLoggedIn.value);
 function logout() {
   localStorage.removeItem("currentUserId");
   localStorage.removeItem("msToken"); // 如果有用 token
-  currentUserId.value = null;         // ★ 讓畫面更新
+  currentUserId.value = null; // ★ 讓畫面更新
 }
 
-// ================== Pinia（預留，暫時沒用到） ==================
 const userStore = useUserStore();
 
 // ================== 登入表單 ==================
@@ -273,11 +279,11 @@ const loginRules = reactive({
   password: [{ validator: validatePwd, trigger: "blur" }],
 });
 
-// 登入方法（建議改成不收參數，直接用 formLoginRef）
+// 登入方法
 const submitLoginForm = async () => {
   if (!formLoginRef.value) return;
 
-  // 1. 先做 Element Plus 表單驗證
+  // 先做 Element Plus 表單驗證
   try {
     await formLoginRef.value.validate();
     console.log("登入表單驗證成功");
@@ -286,37 +292,34 @@ const submitLoginForm = async () => {
     return;
   }
 
-  // 2. 從 localStorage 撈使用者清單
+  //  從 localStorage 撈使用者清單
   const users = loadUsers();
   console.log("目前所有 users:", users);
-
   if (users.length === 0) {
     console.log("目前沒有任何註冊帳號");
     return;
   }
-
-  // 3. 用 email 找使用者
+  //  用 email 找使用者
   const user = users.find((u) => u.email === formLogin.email);
-
   if (!user) {
     console.log("帳號錯誤：找不到這個 email");
     return;
   }
-
-  // 4. 比對密碼
+  // 比對密碼
   if (user.password !== formLogin.password) {
     console.log("密碼錯誤");
     return;
   }
 
-  // 5. 登入成功
+  // 登入成功
   console.log("登入成功，使用者：", user);
 
-  // 紀錄目前登入者（localStorage + 反應式狀態）
+  // 紀錄目前登入者
   localStorage.setItem("currentUserId", String(user.id));
   localStorage.setItem("msToken", user.token);
-  currentUserId.value = String(user.id); // ★ 這行很重要
-
+  //改變ID狀態
+  currentUserId.value = String(user.id);
+  //關閉彈跳視窗
   dialogLogin.value = false;
 };
 
@@ -388,7 +391,7 @@ let token: any = null;
 const submitRegisterForm = async () => {
   if (!formRegisterRef.value) return;
 
-  // 1. 先做表單驗證
+  // 先做表單驗證
   try {
     await formRegisterRef.value.validate();
     console.log("註冊表單驗證成功");
@@ -399,7 +402,7 @@ const submitRegisterForm = async () => {
     return;
   }
 
-  // 2. 呼叫 Demo API 取得 token（你現在用 reqres 作假的）
+  // 2. 呼叫 Demo API 取得 token（用 reqres 作假的）
   try {
     const res = await adminLoginApi({
       email: "eve.holt@reqres.in",
@@ -413,7 +416,7 @@ const submitRegisterForm = async () => {
     return;
   }
 
-  // 3. 建立新的使用者資料
+  // 建立新的使用者資料
   const newUser: UserRecord = {
     id: Date.now(),
     email: formRegister.email,
@@ -421,14 +424,14 @@ const submitRegisterForm = async () => {
     token: token.token, // 依實際 API 形狀調整
   };
 
-  // 4. 存入 users 陣列
+  // 存入 users 陣列
   const users = loadUsers();
   users.push(newUser);
   saveUsers(users);
 
   console.log("已新增使用者：", newUser);
 
-  // 5. 設為「已登入」
+  // 設為「已登入」
   localStorage.setItem("currentUserId", String(newUser.id));
   localStorage.setItem("msToken", newUser.token);
   currentUserId.value = String(newUser.id); // ★ 讓畫面跟著變
@@ -443,7 +446,7 @@ watch(dialogRegister, (val) => {
   }
 });
 
-// ================== Header Menu（你的原本下拉選單邏輯） ==================
+// 下拉選單邏輯 ==================
 const menuRef = ref<HTMLElement | null>(null);
 
 function handleClickOutside(e: MouseEvent) {
@@ -471,10 +474,11 @@ onBeforeUnmount(() => {
 });
 </script>
 
-
 <style scoped lang="scss">
 .myheader-styles {
+  padding: 8px 64px;
   position: relative;
+  // height: 60px;
   left: 0;
   width: 100vw;
   background-color: #33b1fa;
@@ -527,6 +531,61 @@ onBeforeUnmount(() => {
           pointer-events: auto;
         }
       }
+    }
+  }
+  .mamber-area {
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .login-regisster {
+    position: relative;
+    height: 100%;
+    width: 100px;
+    // min-height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #ce5151;
+    // height: 60px;
+    padding: 8px;
+
+    transition: all 0.4s ease;
+    // overflow: hidden;
+    background-color: #33b1fa;
+    &:hover {
+      // height: 200px;
+      .mamber-login {
+        top: 40px;
+      }
+      .mamber-regisster {
+        top: 80px;
+      }
+    }
+
+    .member,
+    .mamber-login,
+    .mamber-regisster {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+
+      z-index: 1;
+      top: 0%;
+      width: 100px;
+      height: 30px;
+      position: absolute;
+      // padding: 4px 8px;
+      margin: 0;
+      opacity: 1;
+      transition: all 0.4s ease;
+    }
+    .member {
+      z-index: 2;
+      height: auto;
+      background-color: #33b1fa;
     }
   }
 }
