@@ -113,25 +113,43 @@
   </el-dialog>
 
   <!-- 註冊系統 -->
-  <!-- <el-dialog v-model="dialogRegister" title="註冊" width="500">
-    <el-form :model="formRegister">
-      <el-form-item label="帳號" :label-width="formLabelWidth" >
-        <el-input v-model="formRegister.email" autocomplete="off" />
+  <el-dialog v-model="dialogRegister" title="註冊" width="500">
+    <el-form ref="formRegisterRef" :model="formRegister" :rules="registerRule">
+      <el-form-item label="帳號" prop="email" :label-width="formLabelWidth">
+        <el-input v-model="formRegister.email" type="text" autocomplete="off" />
       </el-form-item>
-      <el-form-item label="密碼" :label-width="formLabelWidth">
-        <el-input v-model="formRegister.password" autocomplete="off" />
+
+      <el-form-item label="密碼" prop="password" :label-width="formLabelWidth">
+        <el-input
+          v-model="formRegister.password"
+          type="password"
+          autocomplete="off"
+            show-password
+        />
       </el-form-item>
-      <el-form-item label="確認密碼" :label-width="formLabelWidth">
-        <el-input v-model="formRegister.passwordConfirm" autocomplete="off" />
+
+      <el-form-item
+        label="確認密碼"
+        prop="passwordConfirm"
+        :label-width="formLabelWidth"
+      >
+        <el-input
+          v-model="formRegister.passwordConfirm"
+          type="password"
+          autocomplete="off"
+            show-password
+        />
       </el-form-item>
     </el-form>
+
     <template #footer>
       <div class="dialog-footer">
         <el-button @click="dialogRegister = false">取消</el-button>
-        <el-button @click="dialogRegister = false">確認</el-button>
+        <!-- 這裡直接呼叫，不要傳參數 -->
+        <el-button @click="submitRegisterForm(formRegisterRef)">確認</el-button>
       </div>
     </template>
-  </el-dialog> -->
+  </el-dialog>
 </template>
 
 <script setup lang="ts">
@@ -170,13 +188,13 @@ const validatePwd = (
 const loginRules = reactive({
   email: [
     { required: true, trigger: "blur", message: "請輸入帳號" },
-    { type: "email", message: "請輸入正確的email格式", trigger: "blur" },
+    { required: true,type: "email", message: "請輸入正確的email格式", trigger: "blur" },
   ],
   password: [{ validator: validatePwd, trigger: "blur" }],
 });
-//登入方法
-import axios from "axios";
+
 import { adminLoginApi } from "@/api/modules/user";
+//登入方法
 
 const submitLoginForm = async (formRef: any) => {
   if (!formRef) return;
@@ -210,6 +228,7 @@ watch(dialogLogin, (val) => {
 });
 //註冊表單
 const dialogRegister = ref(false);
+const formRegisterRef = ref();
 
 interface RegisterForm {
   email: string;
@@ -221,6 +240,75 @@ const formRegister = reactive<RegisterForm>({
   password: "",
   passwordConfirm: "",
 });
+const validateRegisterPwd = (
+  rule: unknown,
+  value: string,
+  callback: (error?: Error) => void
+) => {
+  if (!value) {
+    return callback(new Error("密碼不能為空"));
+  }
+  callback(); // 驗證通過
+};
+//密碼驗證
+const validateConfirmPwd = (
+  rule: unknown,
+  value: string,
+  callback: (error?: Error) => void
+) => {
+  if (!value) {
+    return callback(new Error("請再次輸入密碼"));
+  }
+  if (value !== formRegister.password) {
+    return callback(new Error("兩次輸入的密碼不一致"));
+  }
+};
+//註冊規則
+const registerRule = reactive({
+  email: [
+    { required: true, trigger: "blur", message: "請輸入帳號" },
+    { type: "email", message: "請輸入正確的email格式", trigger: "blur" },
+  ],
+  password: [
+    { required: true,min: 6, max: 20, message: "密碼為長度為6-20位", trigger: "blur" },
+    { validator: validateRegisterPwd, trigger: "blur" },
+  ],
+  passwordConfirm: [
+    { required: true, message: "請再次輸入密碼", trigger: "blur" },
+    { validator: validateConfirmPwd, trigger: "blur" },
+  ],
+});
+
+const submitRegisterForm = async (formRef: any) => {
+  if (!formRef) return;
+  try {
+    await formRef.validate();
+
+    console.log("驗證成功");
+  } catch {
+    console.log("驗證失敗");
+    return;
+  }
+
+  try {
+    const res = await adminLoginApi({
+      email: "eve.holt@reqres.in",
+      password: "cityslicka",
+    });
+
+    console.log("API 回傳:", res); // ⭐ 直接是 data，不需要 res.data
+  } catch (err: any) {
+    console.log("API 錯誤 status:", err.response?.status);
+    console.log("API 錯誤 body:", err.response?.data);
+  }
+};
+//清除驗證資訊
+watch(dialogRegister, (val) => {
+  if (!val && formRegisterRef.value) {
+    formRegisterRef.value.resetFields();
+  }
+});
+
 
 // 點擊 header 外收合
 const menuRef = ref<HTMLElement | null>(null);
