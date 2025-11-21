@@ -74,12 +74,18 @@
       </ul>
     </div>
     <div class="flex justify-between w-[200px] mamber-area">
-      <el-button class="" plain @click="dialogLogin = true">
-        會員登入
-      </el-button>
-      <el-button class="" plain @click="dialogRegister = true">
-        註冊
-      </el-button>
+      <template v-if="isLoggedIn">
+        <span>{{ currentUser?.email }}</span>
+        <el-button @click="logout">登出</el-button>
+      </template>
+      <template v-else>
+        <el-button  class="" plain @click="dialogLogin = true">
+          會員登入
+        </el-button>
+        <el-button class="" plain @click="dialogRegister = true">
+          註冊
+        </el-button>
+      </template>
     </div>
   </nav>
 
@@ -107,7 +113,7 @@
     <template #footer>
       <div class="dialog-footer">
         <el-button @click="dialogLogin = false">取消</el-button>
-        <el-button @click="submitLoginForm(formLoginRef)">確認</el-button>
+        <el-button @click="submitLoginForm">確認</el-button>
       </div>
     </template>
   </el-dialog>
@@ -115,29 +121,30 @@
   <!-- 註冊系統 -->
   <el-dialog v-model="dialogRegister" title="註冊" width="500">
     <el-form ref="formRegisterRef" :model="formRegister" :rules="registerRule">
-      <el-form-item label="帳號" prop="email" :label-width="formLabelWidth">
-        <el-input v-model="formRegister.email" type="text" autocomplete="off" />
+      <el-form-item prop="email">
+        <el-input
+          v-model="formRegister.email"
+          type="text"
+          autocomplete="off"
+          placeholder="帳號"
+        />
       </el-form-item>
-
-      <el-form-item label="密碼" prop="password" :label-width="formLabelWidth">
+      <el-form-item prop="password">
         <el-input
           v-model="formRegister.password"
           type="password"
           autocomplete="off"
-            show-password
+          placeholder="密碼"
+          show-password
         />
       </el-form-item>
-
-      <el-form-item
-        label="確認密碼"
-        prop="passwordConfirm"
-        :label-width="formLabelWidth"
-      >
+      <el-form-item prop="passwordConfirm">
         <el-input
           v-model="formRegister.passwordConfirm"
           type="password"
           autocomplete="off"
-            show-password
+          placeholder="再次輸入密碼"
+          show-password
         />
       </el-form-item>
     </el-form>
@@ -146,7 +153,7 @@
       <div class="dialog-footer">
         <el-button @click="dialogRegister = false">取消</el-button>
         <!-- 這裡直接呼叫，不要傳參數 -->
-        <el-button @click="submitRegisterForm(formRegisterRef)">確認</el-button>
+        <el-button @click="submitRegisterForm">確認</el-button>
       </div>
     </template>
   </el-dialog>
@@ -154,26 +161,94 @@
 
 <script setup lang="ts">
 import { useUserStore } from "@/stores/user";
-import { reactive, ref, onMounted, onBeforeUnmount, watch } from "vue";
+import {
+  reactive,
+  ref,
+  computed,
+  onMounted,
+  onBeforeUnmount,
+  watch,
+} from "vue";
+import { adminLoginApi } from "@/api/modules/user";
 
-const userStore = useUserStore();
-//寬度設定
-const formLabelWidth = "100px";
-//登入表單
-//表單實例
-const formLoginRef = ref();
-//開關表單
-const dialogLogin = ref(false);
+// ================== 型別與常數 ==================
+const USERS_KEY = "users"; // 使用者清單 key
+
+interface UserRecord {
+  id: number;      // 自己產生的 ID
+  email: string;   // 註冊帳號
+  password: string;// 註冊密碼
+  token: string;   // 後端回傳的 token
+}
 
 interface LoginForm {
   email: string;
   password: string;
 }
+
+interface RegisterForm {
+  email: string;
+  password: string;
+  passwordConfirm: string;
+}
+
+// ================== localStorage 工具 ==================
+function loadUsers(): UserRecord[] {
+  const raw = localStorage.getItem(USERS_KEY);
+  if (!raw) return [];
+  try {
+    return JSON.parse(raw) as UserRecord[];
+  } catch {
+    return [];
+  }
+}
+
+function saveUsers(users: UserRecord[]) {
+  localStorage.setItem(USERS_KEY, JSON.stringify(users));
+}
+
+// ================== 登入狀態 ==================
+
+// 反應式的登入 ID（關鍵：畫面要跟著變就要用 ref）
+const currentUserId = ref<string | null>(
+  localStorage.getItem("currentUserId")
+);
+
+// 目前登入的使用者
+const currentUser = computed<UserRecord | null>(() => {
+  const id = currentUserId.value;
+  if (!id) return null;
+
+  const users = loadUsers();
+  return users.find((u) => String(u.id) === id) ?? null;
+});
+
+// 是否登入
+const isLoggedIn = computed(() => currentUser.value !== null);
+
+// 除錯用
+console.log("currentUser:", currentUser.value);
+console.log("是否登入:", isLoggedIn.value);
+
+// 登出
+function logout() {
+  localStorage.removeItem("currentUserId");
+  localStorage.removeItem("msToken"); // 如果有用 token
+  currentUserId.value = null;         // ★ 讓畫面更新
+}
+
+// ================== Pinia（預留，暫時沒用到） ==================
+const userStore = useUserStore();
+
+// ================== 登入表單 ==================
+const formLoginRef = ref();
+const dialogLogin = ref(false);
+
 const formLogin = reactive<LoginForm>({
   email: "",
   password: "",
 });
-//規則
+
 const validatePwd = (
   rule: unknown,
   value: string,
@@ -182,64 +257,86 @@ const validatePwd = (
   if (!value) {
     return callback(new Error("密碼不能為空"));
   }
-  callback(); // 驗證通過
+  callback();
 };
 
 const loginRules = reactive({
   email: [
     { required: true, trigger: "blur", message: "請輸入帳號" },
-    { required: true,type: "email", message: "請輸入正確的email格式", trigger: "blur" },
+    {
+      required: true,
+      type: "email",
+      message: "請輸入正確的 email 格式",
+      trigger: "blur",
+    },
   ],
   password: [{ validator: validatePwd, trigger: "blur" }],
 });
 
-import { adminLoginApi } from "@/api/modules/user";
-//登入方法
+// 登入方法（建議改成不收參數，直接用 formLoginRef）
+const submitLoginForm = async () => {
+  if (!formLoginRef.value) return;
 
-const submitLoginForm = async (formRef: any) => {
-  if (!formRef) return;
+  // 1. 先做 Element Plus 表單驗證
   try {
-    await formRef.validate();
-
-    console.log("驗證成功");
-  } catch {
-    console.log("驗證失敗");
+    await formLoginRef.value.validate();
+    console.log("登入表單驗證成功");
+  } catch (err) {
+    console.log("登入表單驗證失敗", err);
     return;
   }
 
-  try {
-    const res = await adminLoginApi({
-      email: "eve.holt@reqres.in",
-      password: "cityslicka",
-    });
+  // 2. 從 localStorage 撈使用者清單
+  const users = loadUsers();
+  console.log("目前所有 users:", users);
 
-    console.log("API 回傳:", res); // ⭐ 直接是 data，不需要 res.data
-  } catch (err: any) {
-    console.log("API 錯誤 status:", err.response?.status);
-    console.log("API 錯誤 body:", err.response?.data);
+  if (users.length === 0) {
+    console.log("目前沒有任何註冊帳號");
+    return;
   }
+
+  // 3. 用 email 找使用者
+  const user = users.find((u) => u.email === formLogin.email);
+
+  if (!user) {
+    console.log("帳號錯誤：找不到這個 email");
+    return;
+  }
+
+  // 4. 比對密碼
+  if (user.password !== formLogin.password) {
+    console.log("密碼錯誤");
+    return;
+  }
+
+  // 5. 登入成功
+  console.log("登入成功，使用者：", user);
+
+  // 紀錄目前登入者（localStorage + 反應式狀態）
+  localStorage.setItem("currentUserId", String(user.id));
+  localStorage.setItem("msToken", user.token);
+  currentUserId.value = String(user.id); // ★ 這行很重要
+
+  dialogLogin.value = false;
 };
 
-//清除驗證資訊
+// 登入 dialog 關閉時清除表單
 watch(dialogLogin, (val) => {
   if (!val && formLoginRef.value) {
     formLoginRef.value.resetFields();
   }
 });
-//註冊表單
+
+// ================== 註冊表單 ==================
 const dialogRegister = ref(false);
 const formRegisterRef = ref();
 
-interface RegisterForm {
-  email: string;
-  password: string;
-  passwordConfirm: string;
-}
 const formRegister = reactive<RegisterForm>({
   email: "",
   password: "",
   passwordConfirm: "",
 });
+
 const validateRegisterPwd = (
   rule: unknown,
   value: string,
@@ -248,9 +345,9 @@ const validateRegisterPwd = (
   if (!value) {
     return callback(new Error("密碼不能為空"));
   }
-  callback(); // 驗證通過
+  callback();
 };
-//密碼驗證
+
 const validateConfirmPwd = (
   rule: unknown,
   value: string,
@@ -262,15 +359,22 @@ const validateConfirmPwd = (
   if (value !== formRegister.password) {
     return callback(new Error("兩次輸入的密碼不一致"));
   }
+  callback();
 };
-//註冊規則
+
 const registerRule = reactive({
   email: [
     { required: true, trigger: "blur", message: "請輸入帳號" },
-    { type: "email", message: "請輸入正確的email格式", trigger: "blur" },
+    { type: "email", message: "請輸入正確的 email 格式", trigger: "blur" },
   ],
   password: [
-    { required: true,min: 6, max: 20, message: "密碼為長度為6-20位", trigger: "blur" },
+    {
+      required: true,
+      min: 6,
+      max: 20,
+      message: "密碼為長度為 6–20 位",
+      trigger: "blur",
+    },
     { validator: validateRegisterPwd, trigger: "blur" },
   ],
   passwordConfirm: [
@@ -279,57 +383,85 @@ const registerRule = reactive({
   ],
 });
 
-const submitRegisterForm = async (formRef: any) => {
-  if (!formRef) return;
-  try {
-    await formRef.validate();
+let token: any = null;
 
-    console.log("驗證成功");
-  } catch {
-    console.log("驗證失敗");
+const submitRegisterForm = async () => {
+  if (!formRegisterRef.value) return;
+
+  // 1. 先做表單驗證
+  try {
+    await formRegisterRef.value.validate();
+    console.log("註冊表單驗證成功");
+    console.log("註冊帳號", formRegister.email);
+    console.log("註冊密碼", formRegister.password);
+  } catch (err) {
+    console.log("註冊表單驗證失敗", err);
     return;
   }
 
+  // 2. 呼叫 Demo API 取得 token（你現在用 reqres 作假的）
   try {
     const res = await adminLoginApi({
       email: "eve.holt@reqres.in",
       password: "cityslicka",
     });
-
-    console.log("API 回傳:", res); // ⭐ 直接是 data，不需要 res.data
+    console.log("API 回傳:", res);
+    token = res; // 假設 res = { id, token }
   } catch (err: any) {
     console.log("API 錯誤 status:", err.response?.status);
     console.log("API 錯誤 body:", err.response?.data);
+    return;
   }
+
+  // 3. 建立新的使用者資料
+  const newUser: UserRecord = {
+    id: Date.now(),
+    email: formRegister.email,
+    password: formRegister.password,
+    token: token.token, // 依實際 API 形狀調整
+  };
+
+  // 4. 存入 users 陣列
+  const users = loadUsers();
+  users.push(newUser);
+  saveUsers(users);
+
+  console.log("已新增使用者：", newUser);
+
+  // 5. 設為「已登入」
+  localStorage.setItem("currentUserId", String(newUser.id));
+  localStorage.setItem("msToken", newUser.token);
+  currentUserId.value = String(newUser.id); // ★ 讓畫面跟著變
+
+  dialogRegister.value = false;
 };
-//清除驗證資訊
+
+// 註冊 dialog 關閉時清除表單
 watch(dialogRegister, (val) => {
   if (!val && formRegisterRef.value) {
     formRegisterRef.value.resetFields();
   }
 });
 
-
-// 點擊 header 外收合
+// ================== Header Menu（你的原本下拉選單邏輯） ==================
 const menuRef = ref<HTMLElement | null>(null);
+
 function handleClickOutside(e: MouseEvent) {
   if (!menuRef.value) return;
-
-  // 若點擊區域不在 header 裡面
   if (!menuRef.value.contains(e.target as Node)) {
     openMenu.value = null;
   }
 }
-//menu 下拉選單
+
 type MenuKey = "product" | "event" | "about" | null;
 const openMenu = ref<MenuKey>(null);
 
-//偵測觸控裝置
 const isTouch = matchMedia("(hover: none)").matches;
-function toggleMenu(name: any) {
-  // 如果點同一個 → 關閉
+
+function toggleMenu(name: MenuKey) {
   openMenu.value = openMenu.value === name ? null : name;
 }
+
 onMounted(() => {
   document.addEventListener("click", handleClickOutside);
 });
@@ -338,6 +470,7 @@ onBeforeUnmount(() => {
   document.removeEventListener("click", handleClickOutside);
 });
 </script>
+
 
 <style scoped lang="scss">
 .myheader-styles {
