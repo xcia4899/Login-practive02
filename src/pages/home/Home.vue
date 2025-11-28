@@ -125,6 +125,10 @@
         <el-button @click="submitLoginForm">確認</el-button>
       </div>
     </template>
+
+    <!-- <div v-if="formLoginRef.users.length<0">
+      沒有帳號
+    </div> -->
   </el-dialog>
 
   <!-- 註冊系統 -->
@@ -299,17 +303,20 @@ const submitLoginForm = async () => {
   console.log("目前所有 users:", users);
   if (users.length === 0) {
     console.log("目前沒有任何註冊帳號");
+    alert("目前沒有任何註冊帳號");
     return;
   }
   //  用 email 找使用者
   const user = users.find((u) => u.email === formLogin.email);
   if (!user) {
     console.log("帳號錯誤：找不到這個 email");
+    alert("帳號錯誤：找不到這個 email");
     return;
   }
   // 比對密碼
   if (user.password !== formLogin.password) {
     console.log("密碼錯誤");
+    alert("密碼錯誤");
     return;
   }
 

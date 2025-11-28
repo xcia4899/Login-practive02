@@ -76,7 +76,7 @@ const goToOut =()=>{
       width: 100%;
       background-color: #b6b6b6;
       color: rgb(63, 63, 63);
-
+        overflow: hidden;
      
     }
   }
