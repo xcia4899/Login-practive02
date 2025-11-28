@@ -179,7 +179,8 @@ import {
   watch,
 } from "vue";
 import { adminLoginApi } from "@/api/modules/user";
-
+import  { useRouter  } from "vue-router";
+const router = useRouter();
 // ================== 型別與常數 ==================
 const USERS_KEY = "users"; // 使用者清單 key
 
@@ -242,6 +243,7 @@ function logout() {
   localStorage.removeItem("currentUserId");
   localStorage.removeItem("msToken"); // 如果有用 token
   currentUserId.value = null; // ★ 讓畫面更新
+  router.replace('/')
 }
 
 const userStore = useUserStore();
@@ -251,8 +253,8 @@ const formLoginRef = ref();
 const dialogLogin = ref(false);
 
 const formLogin = reactive<LoginForm>({
-  email: "",
-  password: "",
+  email: "sss@aaa.com",
+  password: "aaaaaa",
 });
 
 const validatePwd = (
@@ -321,6 +323,7 @@ const submitLoginForm = async () => {
   currentUserId.value = String(user.id);
   //關閉彈跳視窗
   dialogLogin.value = false;
+  router.push('/homepage')
 };
 
 // 登入 dialog 關閉時清除表單
@@ -435,7 +438,6 @@ const submitRegisterForm = async () => {
   localStorage.setItem("currentUserId", String(newUser.id));
   localStorage.setItem("msToken", newUser.token);
   currentUserId.value = String(newUser.id); // ★ 讓畫面跟著變
-
   dialogRegister.value = false;
 };
 
@@ -480,9 +482,10 @@ onBeforeUnmount(() => {
   position: relative;
   // height: 60px;
   left: 0;
-  width: 100vw;
+  
   background-color: #33b1fa;
   color: rgb(241, 241, 241);
+   z-index: 1000; 
   .nav-area {
     ul {
       .menu-btn {
