@@ -232,12 +232,17 @@ const currentUser = computed<UserRecord | null>(() => {
   if (!id) return null;
 
   const users = loadUsers();
+  
   return users.find((u) => String(u.id) === id) ?? null;
 });
 
 // 是否登入
-const isLoggedIn = computed(() => currentUser.value !== null);
-
+const isLoggedIn = computed(() => {
+return currentUser.value !== null}
+);
+if(isLoggedIn.value){
+  router.push('/homepage')
+}
 // 除錯用
 console.log("currentUser:", currentUser.value);
 console.log("是否登入:", isLoggedIn.value);
