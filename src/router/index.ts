@@ -23,6 +23,11 @@ const router = createRouter({
           name: "testApi02",
           component: () => import("@/pages/homepage/testApi02.vue"),
         },
+        {
+          path: "testApi03",
+          name: "testApi03",
+          component: () => import("@/pages/homepage/testApi03.vue"),
+        },
       ],
     },
   ],

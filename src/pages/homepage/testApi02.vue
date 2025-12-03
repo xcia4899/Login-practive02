@@ -14,7 +14,7 @@
     <h3>API02練習: 含 Query 參數的 API</h3>
     <hr />
     <div v-if="!openContent && petList.length >= 2">
-      <div>前五筆資料</div>
+      <!-- <div>前五筆資料</div> -->
       <div class="showTwo">
         <div
           v-for="(pet, index) in petList.slice(0, 5)"
@@ -31,14 +31,16 @@
     </button>
     <div class="test-body">
       <!-- 有資料才顯示列表 -->
+       
       <div v-if="openContent">
+        <h3>全部資料</h3>
         <div v-for="(pet, index) in petList" :key="pet.id" class="item">
           <div class="id">no.{{ index + 1 }}：{{ pet.id }}</div>
           <div class="name">{{ pet.name }}</div>
         </div>
       </div>
       <!-- 除錯用：沒有資料時的提示 -->
-      <p v-else>只展示前五筆資料</p>
+      <h3 v-else>只展示前五筆資料</h3>
     </div>
   </div>
 </template>

@@ -8,7 +8,7 @@
       <div class="homepage-menu">
         <button class="card card-1" @click="goToApi01">API 練習1</button>
         <button class="card card-2" @click="goToApi02">API 練習2</button>
-        <button class="card card-3">API 練習3</button>
+        <button class="card card-3" @click="goToApi03">API 練習3</button>
         <button class="card card-4">API 練習4</button>
         <button class="card card-5">API 練習5</button>
         <button class="card card-6" @click="goToOut">跳出</button>
@@ -30,6 +30,9 @@ const goToApi01 = () => {
 };
 const goToApi02 = () => {
   router.push({ name: "testApi02" });
+};
+const goToApi03 = () => {
+  router.push({ name: "testApi03" });
 };
 const goToOut = () => {
   router.push({ name: "homepage" });
@@ -57,9 +60,12 @@ const goToOut = () => {
       width:  200px;
       background-color: #494949;
       color: azure;
-
+      display: flex;
+      flex-direction: column;
+      // justify-content: space-around;
+      gap: 6px;
       .card {
-        margin: 24px;
+        margin: 4px;
         background-color: #b9b9b9;
         // color: #000;
       }
