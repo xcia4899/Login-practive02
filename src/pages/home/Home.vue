@@ -350,9 +350,10 @@ const dialogRegister = ref(false);
 const formRegisterRef = ref();
 
 const formRegister = reactive<RegisterForm>({
-  email: "",
-  password: "",
-  passwordConfirm: "",
+  email: "sss@aaa.com",
+  password: "aaaaaa",
+  passwordConfirm: "aaaaaa",
+  
 });
 
 const validateRegisterPwd = (
