@@ -10,6 +10,7 @@
     <div class="test-body">
       <!-- {{ petData }} -->
       <div v-if="!openContent && petData ">
+        <h4>{{errMessage}}</h4>
         <p><b>ID</b>:{{ petData?.id }}</p>
         <p><b>category</b>:{{ petData?.category.id }}-{{ petData?.category.name }}</p>
         <p><b>Name</b>:{{ petData?.name }}</p>
@@ -17,7 +18,10 @@
         <p><b>tags</b>:{{ petData?.tags.id }}{{ petData?.tags.name }}</p>
         <p><b>status</b>:{{ petData?.status }}</p>
       </div>
-      <div v-else><h3>無此ID資料</h3></div>
+      <div v-else>
+        <h3>無此ID資料</h3>
+        <h4>{{errMessage}}</h4>
+      </div>
     </div>
   </div>
 </template>
@@ -31,15 +35,25 @@ const openContent = ref(false);
 const petId = ref<number | null>(null);
 const petData = ref<any>(null);
 
+const openSupporMessage = ref(false);
+const errMessage = ref("點擊'取得清單'以獲取資料");
+const showSupportText = (isOpen: boolean, content: string) => {
+  openSupporMessage.value = isOpen;
+  errMessage.value = content;
+};
+
 const fetchPet = async (id: number) => {
+  showSupportText(false,"讀取中...")
   try {
     const { data } = await axios.get(
       `https://petstore.swagger.io/v2/pet/${id}`
     );
     petData.value = data;
+    showSupportText(true,"成功獲取")
   } catch (err) {
     console.log("錯誤:", err);
     openContent.value = true;
+    showSupportText(false,"讀取失敗")
   }
 };
 
