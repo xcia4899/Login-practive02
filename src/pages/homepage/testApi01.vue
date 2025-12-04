@@ -6,9 +6,10 @@
 
     <h3>API01練習: axios.get</h3>
     <hr />
+    <h3>{{ showMessage }}</h3>
     <div class="test-body">
       <div>不可用使用的數量：{{ getStoreData.unavailable }}</div>
-      <div >總數量:{{ total }}</div>
+      <div>總數量:{{ total }}</div>
       <br />
       <button @click="openContent = !openContent">
         {{ openContent ? "隱藏" : "顯示" }}
@@ -27,9 +28,12 @@
 import axios from "axios";
 import { ref, computed } from "vue";
 import { useRoute } from "vue-router";
+import { useFetchState, sleep } from "@/composables/useFetchState";
+
+const { openContent, showMessage, setState } = useFetchState();
 
 const route = useRoute();
-const openContent = ref(false);
+// const openContent = ref(false);
 // console.log(route.params.id); // 123
 
 const total = computed(() => {
@@ -39,12 +43,15 @@ const total = computed(() => {
 const getStoreData = ref<Record<string, number>>({});
 
 const getStoreInventory = async () => {
+  setState(true, "讀取中...");
+  await sleep(300);
   try {
     const res = await axios.get(
       "https://petstore.swagger.io/v2/store/inventory"
     );
     getStoreData.value = res.data;
     openContent.value = true;
+    setState(true, "已取得資料");
     console.log("內容:", getStoreData.value);
   } catch (err) {
     console.log("失敗:", err);
@@ -74,7 +81,7 @@ hr {
   // border: 1px solid;
   // height: 80%;
   width: 100%;
-  
+
   display: flex;
   // justify-content: center;
   align-items: center;
@@ -86,9 +93,9 @@ hr {
     gap: 6px;
     padding: 6px;
     margin-top: 12px;
-    .item{
+    .item {
       padding: 4px;
-      border: 1px solid ;
+      border: 1px solid;
     }
   }
 }

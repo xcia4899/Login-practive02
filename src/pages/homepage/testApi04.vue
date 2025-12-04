@@ -9,9 +9,9 @@
     </div>
     <h3>API04練習: PUT（更新資料））&& DELETE（刪除資料）</h3>
     <hr />
-    <h3 v-if="openContent">{{ errMessage }}</h3>
+    <h3 v-if="openContent">{{ showMessage }}</h3>
     <div v-if="!openContent" class="test-body">
-      <h3>{{errMessage}}</h3>
+      <h3>{{showMessage}}</h3>
       <div class="item"><b>ID:</b>{{ statusItem.id }}</div>
       <div class="item"><b>名稱:</b>{{ statusItem.name }}</div>
       <div class="item"><b>類型:</b>{{ statusItem.status }}</div>
@@ -22,9 +22,9 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import axios from "axios";
-import { useFetchState ,sleep} from "@/composables/useFetchStateShow";
+import { useFetchState ,sleep} from "@/composables/useFetchState";
 
-const { openContent, errMessage, setState } = useFetchState();
+const { openContent, showMessage, setState } = useFetchState();
 
 
 const statusItem = ref<any>({
@@ -35,7 +35,7 @@ const statusItem = ref<any>({
 const editName = ref("");
 
 const openSupporMessage = ref(false);
-errMessage.value = ("點擊'取得清單'以獲取資料");
+showMessage.value = ("點擊'取得清單'以獲取資料");
 
 
 const updatePet = (body: any) => {
@@ -47,7 +47,7 @@ const saveUpdatePet = async () => {
     setState(true, "請先取得資料再進行更新");
     return;
   }
-  
+
   setState(false, "修改中...");
   await sleep(400); // 模擬等待時間
 

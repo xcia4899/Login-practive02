@@ -2,16 +2,16 @@ import { ref } from "vue";
 //讀取顯示開關
 export function useFetchState() {
   const openContent = ref(true);
-  const errMessage = ref("點擊按鈕以獲取資料");
+  const showMessage = ref("點擊[按鈕]以獲取資料");
 
   const setState = (isOpen: boolean, message: string) => {
     openContent.value = isOpen;
-    errMessage.value = message;
+    showMessage.value = message;
   };
 
   return {
     openContent,
-    errMessage,
+    showMessage,
     setState
   };
 }

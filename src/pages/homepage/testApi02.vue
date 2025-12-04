@@ -1,46 +1,42 @@
 <template>
   <div class="test-page">
     <div class="test-top">
-      <button type="button" @click="findPetsByStatus('available')">
+      <button type="button" @click="getPets('available')">
         取得 available 清單
       </button>
-      <button type="button" @click="findPetsByStatus('pending')">
+      <button type="button" @click="getPets('pending')">
         取得 pending 清單
       </button>
-      <button type="button" @click="findPetsByStatus('sold')">
-        取得 sold 清單
-      </button>
+      <button type="button" @click="getPets('sold')">取得 sold 清單</button>
     </div>
     <h3>API02練習: 含 Query 參數的 API</h3>
     <hr />
-    <div v-if="!openContent && petList.length >= 2">
-      <!-- <div>前五筆資料</div> -->
-      <div class="showTwo">
-        <div
-          v-for="(pet, index) in petList.slice(0, 5)"
-          :key="pet.id"
-          class="itemTop"
-        >
-          <div class="id">No. {{ index + 1 }}：{{ pet.id }}</div>
-          <div class="name">Name: {{ pet.name }}</div>
-        </div>
-      </div>
-    </div>
     <button @click="openContent = !openContent">
       {{ openContent ? "部分顯示" : "全部展開" }}
     </button>
-    <div class="test-body">
-      <!-- 有資料才顯示列表 -->
-       
-      <div v-if="openContent">
-        <h3>全部資料</h3>
-        <div v-for="(pet, index) in petList" :key="pet.id" class="item">
-          <div class="id">no.{{ index + 1 }}：{{ pet.id }}</div>
-          <div class="name">{{ pet.name }}</div>
-        </div>
+    <h4></h4>
+    <div class="message">
+      {{ openContent ? "全部資料" : "前五筆資料" }} --- {{ showMessage }}
+    </div>
+    <div v-if="!openContent">
+      <div
+        v-for="(pet, index) in petList.slice(0, 5)"
+        :key="`${pet.id}-${index}`"
+        class="item"
+      >
+        <div class="id">no.{{ index + 1 }}：{{ pet.id }}</div>
+        <div class="name">{{ pet.name }}</div>
       </div>
-      <!-- 除錯用：沒有資料時的提示 -->
-      <h3 v-else>只展示前五筆資料</h3>
+    </div>
+    <div v-else class="test-body">
+      <div
+        v-for="(pet, index) in petList"
+        :key="`${pet.id}-${index}`"
+        class="item"
+      >
+        <div class="id">no.{{ index + 1 }}：{{ pet.id }}</div>
+        <div class="name">{{ pet.name }}</div>
+      </div>
     </div>
   </div>
 </template>
@@ -48,25 +44,41 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import axios from "axios";
+import { useFetchState, sleep } from "@/composables/useFetchState";
 
+const { openContent, showMessage, setState } = useFetchState();
+
+type typePet = "available" | "pending" | "sold";
 interface Pet {
   id: number;
   name: string;
-  status: "available" | "pending" | "sold";
+  status: typePet;
 }
 
 const petList = ref<Pet[]>([]);
-const openContent = ref(false);
+// const openContent = ref(false);
 
-const findPetsByStatus = async (status: "available" | "pending" | "sold") => {
+//獲取API資料
+const fetchPets = async (status: typePet) => {
   const { data } = await axios.get<Pet[]>(
     "https://petstore.swagger.io/v2/pet/findByStatus",
-    {
-      params: { status },
-    }
+    { params: { status } }
   );
-  petList.value = data;
-  //   openContent.value = true        // 抓到資料後順便打開列表
+  return data;
+};
+
+//選擇狀態
+const getPets = async (status: typePet) => {
+  setState(true, `正在取得 ${status} 中...`);
+  await sleep(400); //設定最短讀取時間
+  try {
+    const data = await fetchPets(status);
+    petList.value = data;
+    setState(true, `已取得${status}資料，共 ${data.length} 筆`);
+  } catch (err) {
+    console.log(err);
+    setState(true, `錯誤:無法取得${status}資料`);
+  }
 };
 </script>
 
@@ -77,9 +89,21 @@ h3 {
 hr {
   margin: 6px 0;
 }
+.message {
+  font-size: 20px;
+  margin: 6px 0;
+}
+button {
+  // height: 0px;
+  padding: 4px 8px;
+  margin: 0 8px 0 ;
+}
 .test-page {
   padding: 16px;
   background: #ddd;
+  display: flex;
+  flex-direction: column; // ★ 讓下面能吃滿剩餘空間
+  height: calc(100vh - 80px - 56px); // ★ 必須要有高度基準
 
   .test-top {
     margin-bottom: 16px;
@@ -87,27 +111,17 @@ hr {
     justify-content: center;
     gap: 8px;
   }
-  .showTwo {
-    display: flex;
-    justify-content: center;
-    gap: 6px;
-    .itemTop {
-      border: 1px solid #000;
-      margin: 6px 0;
-      padding: 4px 8px;
-    }
-  }
 
   .test-body {
-    margin-top: 16px;
-    height: 500px;
+    flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
-    .item {
-      border: 1px solid #000;
-      margin: 6px 0;
-      padding: 4px 8px;
-    }
+  }
+
+  .item {
+    border: 1px solid #000;
+    margin: 6px 0;
+    padding: 4px 8px;
   }
 }
 </style>

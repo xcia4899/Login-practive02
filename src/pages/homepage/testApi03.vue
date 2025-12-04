@@ -9,7 +9,7 @@
 
     <div class="test-body">
       <!-- 有資料的情況 -->
-       <h3>{{ errMessage }}</h3>
+       <h3>{{ showMessage }}</h3>
       <div v-if="  petData">
         
         <p><b>ID</b>：{{ petData.id }}</p>
@@ -33,14 +33,14 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import axios from "axios";
-import { useFetchState ,sleep} from "@/composables/useFetchStateShow";
+import { useFetchState ,sleep} from "@/composables/useFetchState";
 
-const { openContent, errMessage, setState } = useFetchState();
+const { openContent, showMessage, setState } = useFetchState();
 
 const petId = ref<number | null>(null);
 const petData = ref<any>(null);
 
-errMessage.value = "點擊『取得清單』以獲取資料";
+showMessage.value = "點擊『取得清單』以獲取資料";
 
 
 const fetchPet = async (id: number) => {
