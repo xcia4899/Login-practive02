@@ -350,9 +350,9 @@ const dialogRegister = ref(false);
 const formRegisterRef = ref();
 
 const formRegister = reactive<RegisterForm>({
-  email: "sss@aaa.com",
-  password: "aaaaaa",
-  passwordConfirm: "aaaaaa",
+  email: "",
+  password: "",
+  passwordConfirm: "",
   
 });
 
