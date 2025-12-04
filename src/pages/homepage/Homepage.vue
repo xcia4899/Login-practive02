@@ -1,23 +1,23 @@
 <template>
   <div class="homepage-container">
     <div class="homepage-header">
-      練習區域
+      API 練習區域
       <p>使用Swagger UI 練習請求收取</p>
     </div>
     <div class="homepage-body">
       <div class="homepage-menu">
         <div class="homepage-menu">
           <button class="card card-1" @click="go('testApi01')">
-            API 練習1
+            axios.get 練習
           </button>
           <button class="card card-2" @click="go('testApi02')">
-            API 練習2
+            get/Query 練習
           </button>
           <button class="card card-3" @click="go('testApi03')">
-            API 練習3
+            get{path} 練習
           </button>
           <button class="card card-4" @click="go('testApi04')">
-            API 練習4
+            axios.put 練習
           </button>
           <button class="card card-5">API 練習5</button>
           <button class="card card-6" @click="go('homepage')">跳出</button>

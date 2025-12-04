@@ -9,11 +9,12 @@
     </div>
     <h3>API04練習: PUT（更新資料））&& DELETE（刪除資料）</h3>
     <hr />
-    <h3 v-if="!openSupporMessage">{{ errMessage }}</h3>
-    <div v-else class="test-body">
-      <div>ID:{{ statusItem.id }}</div>
-      <div>名稱:{{ statusItem.name }}</div>
-      <div>體重:{{ statusItem.status }}</div>
+    <h3 v-if="openContent">{{ errMessage }}</h3>
+    <div v-if="!openContent" class="test-body">
+      <h3>{{errMessage}}</h3>
+      <div class="item"><b>ID:</b>{{ statusItem.id }}</div>
+      <div class="item"><b>名稱:</b>{{ statusItem.name }}</div>
+      <div class="item"><b>類型:</b>{{ statusItem.status }}</div>
     </div>
   </div>
 </template>
@@ -21,6 +22,10 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import axios from "axios";
+import { useFetchState ,sleep} from "@/composables/useFetchStateShow";
+
+const { openContent, errMessage, setState } = useFetchState();
+
 
 const statusItem = ref<any>({
   id: null,
@@ -30,18 +35,24 @@ const statusItem = ref<any>({
 const editName = ref("");
 
 const openSupporMessage = ref(false);
-const errMessage = ref("點擊'取得清單'以獲取資料");
-const showSupportText = (isOpen: boolean, content: string) => {
-  openSupporMessage.value = isOpen;
-  errMessage.value = content;
-};
+errMessage.value = ("點擊'取得清單'以獲取資料");
+
 
 const updatePet = (body: any) => {
   return axios.put("https://petstore.swagger.io/v2/pet", body);
 };
+
 const saveUpdatePet = async () => {
   if (!statusItem.value || !statusItem.value.id) {
-    alert("請先按「取得清單」取得一筆寵物資料");
+    setState(true, "請先取得資料再進行更新");
+    return;
+  }
+  
+  setState(false, "修改中...");
+  await sleep(400); // 模擬等待時間
+
+  if (!editName.value) {
+    setState(false, "名稱不能留空");
     return;
   }
 
@@ -51,15 +62,18 @@ const saveUpdatePet = async () => {
       name: editName.value, // 只把名稱改成輸入框的值
     };
 
-    let res = await updatePet(body);
-
+    const res = await updatePet(body);
     statusItem.value = res.data;
     console.log("成功更新名稱");
+    setState(false, "已更新名稱");
   } catch (err) {
     console.log("失敗", err);
+    setState(false, "更新失敗");
     // throw err;
   }
 };
+
+
 const getPetId = (petId: number) => {
   return axios.get(`https://petstore.swagger.io/v2/pet/${petId}`);
 };
@@ -67,15 +81,15 @@ const getPetId = (petId: number) => {
 const savePetId = async () => {
   const petId = random(1, 99);
 
-  showSupportText(false, "讀取中...");
+  setState(true, "讀取中...");
   try {
     let res = await getPetId(petId);
     statusItem.value = res.data;
     // editName.value = res.data.name ?? ""; // ← 同步到輸入框
-    showSupportText(true, "成功讀取資料!");
+    setState(false, "成功讀取資料!");
   } catch (err) {
     console.log("失敗", err);
-    showSupportText(false, "沒有資料，點擊按鈕重新取得");
+    setState(true, "沒有資料，點擊按鈕重新取得");
   }
 };
 
@@ -130,10 +144,12 @@ p {
     overflow-y: auto;
     overflow-x: hidden;
     font-size: 24px;
+
     .item {
       border: 1px solid #000;
       margin: 6px 0;
       padding: 4px 8px;
+      
     }
   }
 }

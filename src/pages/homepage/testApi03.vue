@@ -8,19 +8,23 @@
     <hr />
 
     <div class="test-body">
-      <!-- {{ petData }} -->
-      <div v-if="!openContent && petData ">
-        <h4>{{errMessage}}</h4>
-        <p><b>ID</b>:{{ petData?.id }}</p>
-        <p><b>category</b>:{{ petData?.category.id }}-{{ petData?.category.name }}</p>
-        <p><b>Name</b>:{{ petData?.name }}</p>
-        <p><b>photoUrls</b>:{{ petData?.photoUrls }}</p>
-        <p><b>tags</b>:{{ petData?.tags.id }}{{ petData?.tags.name }}</p>
-        <p><b>status</b>:{{ petData?.status }}</p>
-      </div>
-      <div v-else>
-        <h3>無此ID資料</h3>
-        <h4>{{errMessage}}</h4>
+      <!-- 有資料的情況 -->
+       <h3>{{ errMessage }}</h3>
+      <div v-if="  petData">
+        
+        <p><b>ID</b>：{{ petData.id }}</p>
+        <p>
+          <b>category</b>： {{ petData.category?.id }} -
+          {{ petData.category?.name }}
+        </p>
+        <p><b>Name</b>：{{ petData.name }}</p>
+        <p><b>photoUrls</b>：{{ petData.photoUrls }}</p>
+        <p>
+          <b>tags</b>：
+          <!-- tags 是陣列，這裡只示範第一個 -->
+          {{ petData.tags?.[0]?.id }} - {{ petData.tags?.[0]?.name }}
+        </p>
+        <p><b>status</b>：{{ petData.status }}</p>
       </div>
     </div>
   </div>
@@ -29,44 +33,52 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import axios from "axios";
+import { useFetchState ,sleep} from "@/composables/useFetchStateShow";
 
-const openContent = ref(false);
+const { openContent, errMessage, setState } = useFetchState();
 
 const petId = ref<number | null>(null);
 const petData = ref<any>(null);
 
-const openSupporMessage = ref(false);
-const errMessage = ref("點擊'取得清單'以獲取資料");
-const showSupportText = (isOpen: boolean, content: string) => {
-  openSupporMessage.value = isOpen;
-  errMessage.value = content;
-};
+errMessage.value = "點擊『取得清單』以獲取資料";
+
 
 const fetchPet = async (id: number) => {
-  showSupportText(false,"讀取中...")
-  try {
-    const { data } = await axios.get(
-      `https://petstore.swagger.io/v2/pet/${id}`
-    );
-    petData.value = data;
-    showSupportText(true,"成功獲取")
-  } catch (err) {
-    console.log("錯誤:", err);
-    openContent.value = true;
-    showSupportText(false,"讀取失敗")
-  }
+  const { data } = await axios.get(
+    `https://petstore.swagger.io/v2/pet/${id}`
+  );
+  return data;
 };
 
 const getPet = async () => {
   console.log("點擊 petId:", petId.value);
 
+  // 1. 檢查輸入
   if (petId.value == null) {
     console.log("請輸入 數字");
+     setState(true, "檢查中...");
+    await sleep(500)
+    setState(true, "請輸入數字");
     return;
   }
 
-  await fetchPet(petId.value);
+  // 2. 進入讀取中狀態
+  setState(true, "讀取中...");
+
+  try {
+    const data = await fetchPet(petId.value);
+
+    petData.value = data;
+    setState(true, "成功獲取資料");
+  } catch (err) {
+    console.log("錯誤:", err);
+  
+    petData.value = null;
+    petId.value = null;
+    setState(true, "無此 ID 資料，請重新輸入數字");
+  }
 };
+
 </script>
 
 <style scoped lang="scss">
@@ -76,11 +88,11 @@ h3 {
 hr {
   margin: 6px 0;
 }
-p{
-    font-size: 20px;
-    border: 1px solid ;
-    margin: 6px 0;
-    padding: 4px 8px;
+p {
+  font-size: 20px;
+  border: 1px solid;
+  margin: 6px 0;
+  padding: 4px 8px;
 }
 .test-page {
   padding: 16px;
