@@ -4,14 +4,19 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
-      path: "/home",
-      name: "home",
+      path: "/",
+      redirect: "/Home",
+    },
+    {
+      path: "/Home",
+      name: "Home",
       component: () => import("@/pages/home/Home.vue"),
     },
     {
       path: "/homepage",
       name: "homepage",
       component: () => import("@/pages/homepage/Homepage.vue"),
+       
       children: [
         {
           path: "testApi01",
@@ -28,7 +33,7 @@ const router = createRouter({
           name: "testApi03",
           component: () => import("@/pages/homepage/testApi03.vue"),
         },
-         {
+        {
           path: "testApi04",
           name: "testApi04",
           component: () => import("@/pages/homepage/testApi04.vue"),
