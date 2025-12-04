@@ -1,10 +1,12 @@
 <template>
   <nav class="myheader-styles flex justify-between items-center p-4">
     <div class="w-[300px]">
-      <button  @click="router.push('/')">回首頁</button>
-      <button type="button" @click="router.push('/homepage')">進入API練習區域</button>
+      <button @click="router.push('/')">回首頁</button>
+      <button type="button" @click="router.push('/homepage')">
+        進入API練習區域
+      </button>
     </div>
-    
+
     <div ref="menuRef" class="nav-area">
       <ul class="flex gap-8">
         <!-- 商品，下拉選單 -->
@@ -78,11 +80,11 @@
       </ul>
     </div>
     <div class="mamber-area w-[300px]">
-      <template  v-if="isLoggedIn">
-       <div class="flex items-center gap-3">
+      <template v-if="isLoggedIn">
+        <div class="flex items-center gap-3">
           <span>{{ currentUser?.email }}</span>
           <el-button @click="logout">登出</el-button>
-       </div>
+        </div>
       </template>
       <template v-else>
         <div class="login-regisster">
@@ -187,7 +189,7 @@ import {
   watch,
 } from "vue";
 import { adminLoginApi } from "@/api/modules/user";
-import  { useRouter  } from "vue-router";
+import { useRouter } from "vue-router";
 const router = useRouter();
 // ================== 型別與常數 ==================
 const USERS_KEY = "users"; // 使用者清單 key
@@ -236,17 +238,17 @@ const currentUser = computed<UserRecord | null>(() => {
   if (!id) return null;
 
   const users = loadUsers();
-  
+
   return users.find((u) => String(u.id) === id) ?? null;
 });
 
 // 是否登入
 const isLoggedIn = computed(() => {
-return currentUser.value !== null}
-);
-if(isLoggedIn.value){
-  router.push('/homepage')
-}
+  return currentUser.value !== null;
+});
+// if(isLoggedIn.value){
+//   router.push('/homepage')
+// }
 // 除錯用
 console.log("currentUser:", currentUser.value);
 console.log("是否登入:", isLoggedIn.value);
@@ -256,7 +258,7 @@ function logout() {
   localStorage.removeItem("currentUserId");
   localStorage.removeItem("msToken"); // 如果有用 token
   currentUserId.value = null; // ★ 讓畫面更新
-  router.replace('/')
+  router.replace("/");
 }
 
 const userStore = useUserStore();
@@ -298,7 +300,7 @@ const loginRules = reactive({
 const submitLoginForm = async () => {
   if (!formLoginRef.value) return;
 
-  // 先做 Element Plus 表單驗證
+  // 1. Element Plus 表單驗證
   try {
     await formLoginRef.value.validate();
     console.log("登入表單驗證成功");
@@ -307,39 +309,43 @@ const submitLoginForm = async () => {
     return;
   }
 
-  //  從 localStorage 撈使用者清單
+  // 2. 取得 users 清單
   const users = loadUsers();
-  console.log("目前所有 users:", users);
-  if (users.length === 0) {
-    console.log("目前沒有任何註冊帳號");
+  if (!users.length) {
     alert("目前沒有任何註冊帳號");
     return;
   }
-  //  用 email 找使用者
+
+  // 3. 找 email 是否存在
   const user = users.find((u) => u.email === formLogin.email);
   if (!user) {
-    console.log("帳號錯誤：找不到這個 email");
     alert("帳號錯誤：找不到這個 email");
     return;
   }
-  // 比對密碼
+
+  // 4. 密碼比對
   if (user.password !== formLogin.password) {
-    console.log("密碼錯誤");
     alert("密碼錯誤");
     return;
   }
 
-  // 登入成功
-  console.log("登入成功，使用者：", user);
+  // ★ 5. 登入成功 → 重新產生 token（模擬後端登入行為）
+  const newToken = "token-" + crypto.randomUUID();
+  user.token = newToken;
 
-  // 紀錄目前登入者
+  // 重新保存 users（因為 token 已更新）
+  saveUsers(users);
+
+  // 6. 紀錄登入狀態
   localStorage.setItem("currentUserId", String(user.id));
-  localStorage.setItem("msToken", user.token);
-  //改變ID狀態
+  localStorage.setItem("msToken", newToken);
   currentUserId.value = String(user.id);
-  //關閉彈跳視窗
+
+  console.log("登入成功：", user);
+
+  // 7. 關閉彈窗 & 導頁
   dialogLogin.value = false;
-  router.push('/homepage')
+  router.push("/homepage");
 };
 
 // 登入 dialog 關閉時清除表單
@@ -357,7 +363,6 @@ const formRegister = reactive<RegisterForm>({
   email: "",
   password: "",
   passwordConfirm: "",
-  
 });
 
 const validateRegisterPwd = (
@@ -411,51 +416,40 @@ let token: any = null;
 const submitRegisterForm = async () => {
   if (!formRegisterRef.value) return;
 
-  // 先做表單驗證
+  // 1. 先做表單驗證
   try {
     await formRegisterRef.value.validate();
     console.log("註冊表單驗證成功");
-    console.log("註冊帳號", formRegister.email);
-    console.log("註冊密碼", formRegister.password);
   } catch (err) {
     console.log("註冊表單驗證失敗", err);
     return;
   }
 
-  // 2. 呼叫 Demo API 取得 token（用 reqres 作假的）
-  try {
-    const res = await adminLoginApi({
-      email: "eve.holt@reqres.in",
-      password: "cityslicka",
-    });
-    console.log("API 回傳:", res);
-    token = res; // 假設 res = { id, token }
-  } catch (err: any) {
-    console.log("API 錯誤 status:", err.response?.status);
-    console.log("API 錯誤 body:", err.response?.data);
-    return;
-  }
+  // 2. 不打 reqres，改為自己產 token
+  const fakeToken = "token-" + crypto.randomUUID();
+  // 或用 Date.now() 也可以： "token-" + Date.now()
 
-  // 建立新的使用者資料
+  // 3. 建立新的使用者資料
   const newUser: UserRecord = {
     id: Date.now(),
     email: formRegister.email,
     password: formRegister.password,
-    token: token.token, // 依實際 API 形狀調整
+    token: fakeToken,
   };
 
-  // 存入 users 陣列
+  // 4. 存入 users 陣列
   const users = loadUsers();
   users.push(newUser);
   saveUsers(users);
-
   console.log("已新增使用者：", newUser);
 
-  // 設為「已登入」
+  // 5. 設為「已登入」
   localStorage.setItem("currentUserId", String(newUser.id));
   localStorage.setItem("msToken", newUser.token);
-  currentUserId.value = String(newUser.id); // ★ 讓畫面跟著變
+  currentUserId.value = String(newUser.id);
   dialogRegister.value = false;
+  // dialogRegister.value = false;
+  router.push("/homepage");
 };
 
 // 註冊 dialog 關閉時清除表單
@@ -477,7 +471,7 @@ function handleClickOutside(e: MouseEvent) {
 
 type MenuKey = "product" | "event" | "about" | null;
 const openMenu = ref<MenuKey>(null);
-
+//這個在純 Vite SPA 沒問題
 const isTouch = matchMedia("(hover: none)").matches;
 
 function toggleMenu(name: MenuKey) {
@@ -499,10 +493,10 @@ onBeforeUnmount(() => {
   position: relative;
   // height: 60px;
   left: 0;
-  
+
   background-color: #33b1fa;
   color: rgb(241, 241, 241);
-   z-index: 1000; 
+  z-index: 1000;
   .nav-area {
     ul {
       .menu-btn {
